@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation Page</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        img {
+            width: 400px;
+            height: 200px;
+            border: 1px solid black;
+            margin-bottom: 20px;
+        }
+        #confirmBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img id="canvasImage" src="" alt="Generated Image">
+        <div id="totalCost"></div>
+        <button id="confirmBtn">Confirmar</button>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const orderId = params.get('orderId');
+
+        // Mostrar el ID del pedido (opcional)
+        console.log('Order ID:', orderId);
+
+        // Recuperar detalles del pedido
+        fetch(`http://localhost/19/get_order.php?orderId=${orderId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.image) {
+                    document.getElementById('canvasImage').src = data.image;
+                    document.getElementById('totalCost').textContent = `Costo total: $${data.cost}`;
+                }
+            })
+           
+            .catch(error => console.error('Error:', error));
+
+        document.getElementById('confirmBtn').addEventListener('click', () => {
+            alert('Pedido confirmado exitosamente');
+            // Aquí puedes enviar una solicitud adicional al servidor si es necesario
+        });
+    </script>
+</body>
+</html>

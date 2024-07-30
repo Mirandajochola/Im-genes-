@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas with Draggable Images (Touch Support)</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .images {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .images img {
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+            cursor: grab;
+        }
+        #canvas {
+            border: 1px solid black;
+            margin-bottom: 20px;
+        }
+        #nextBtn, #exportBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="images" id="imageContainer"></div>
+        <canvas id="canvas" width="800" height="400"></canvas>
+        <button id="nextBtn">Siguiente</button>
+        <button id="exportBtn">Exportar</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const imageContainer = document.getElementById('imageContainer');
+        const nextBtn = document.getElementById('nextBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        let draggingImage = null;
+        let offsetX, offsetY;
+        let totalCost = 0;
+
+        function loadImageToBase64(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const dataURL = canvas.toDataURL('image/png');
+                    resolve(dataURL);
+                };
+                img.onerror = reject;
+                img.src = url;
+            });
+        }
+
+        function addImage(url, cost, width, height) {
+            loadImageToBase64(url)
+                .then(dataURL => {
+                    const img = document.createElement('img');
+                    img.src = dataURL;
+                    img.classList.add('draggable');
+                    img.draggable = true;
+                    img.dataset.cost = cost;
+                    img.dataset.width = width;
+                    img.dataset.height = height;
+                    imageContainer.appendChild(img);
+
+                    img.addEventListener('dragstart', (e) => {
+                        draggingImage = e.target;
+                        offsetX = e.offsetX;
+                        offsetY = e.offsetY;
+                    });
+
+                    img.addEventListener('touchstart', (e) => {
+                        draggingImage = e.target;
+                        const rect = draggingImage.getBoundingClientRect();
+                        const touch = e.touches[0];
+                        offsetX = touch.clientX - rect.left;
+                        offsetY = touch.clientY - rect.top;
+                    });
+                })
+                .catch(console.error);
+        }
+
+        // Agregar imágenes con costos y tamaños personalizados
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 5, 150, 150);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 7, 100, 100);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 3, 200, 200);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 4, 120, 120);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 6, 180, 180);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 5, 140, 140);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 8, 160, 160);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 2, 130, 130);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 7, 170, 170);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 5, 110, 110);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 4, 210, 210);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 6, 190, 190);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 3, 220, 220);
+        addImage('https://raw.githubusercontent.com/Mirandajochola/nextjs-blog-theme/main/pizza.png', 8, 250, 250);
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (draggingImage) {
+                const x = e.clientX - canvas.offsetLeft - offsetX;
+                const y = e.clientY - canvas.offsetTop - offsetY;
+                const width = parseInt(draggingImage.dataset.width, 10);
+                const height = parseInt(draggingImage.dataset.height, 10);
+                ctx.drawImage(draggingImage, x, y, width, height);
+
+                totalCost += parseInt(draggingImage.dataset.cost, 10);
+                draggingImage = null;
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (draggingImage) {
+                const touch = e.touches[0];
+                const x = touch.clientX - canvas.offsetLeft - offsetX;
+                const y = touch.clientY - canvas.offsetTop - offsetY;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const width = parseInt(draggingImage.dataset.width, 10);
+                const height = parseInt(draggingImage.dataset.height, 10);
+                ctx.drawImage(draggingImage, x, y, width, height);
+            }
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (draggingImage) {
+                const touch = e.changedTouches[0];
+                const x = touch.clientX - canvas.offsetLeft - offsetX;
+                const y = touch.clientY - canvas.offsetTop - offsetY;
+                const width = parseInt(draggingImage.dataset.width, 10);
+                const height = parseInt(draggingImage.dataset.height, 10);
+                ctx.drawImage(draggingImage, x, y, width, height);
+
+                totalCost += parseInt(draggingImage.dataset.cost, 10);
+                draggingImage = null;
+            }
+        });
+
+        exportBtn.addEventListener('click', () => {
+            const dataURL = canvas.toDataURL('image/png');
+
+            fetch('http://localhost/19/upload_image.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: dataURL, cost: totalCost })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Imagen exportada y subida con éxito');
+                } else {
+                    console.error('Error:', data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const dataURL = canvas.toDataURL('image/png');
+
+            fetch('http://localhost/19/confirm_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: dataURL, cost: totalCost })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.orderId) {
+                    const url = new URL('confirmation.html', window.location.href);
+                    url.searchParams.set('orderId', data.orderId);
+                    window.location.href = url.href;
+                } else {
+                    console.error('Error:', data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>
